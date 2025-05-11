@@ -2,7 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
-// 暂时不使用flutter_blue_plus直接实现
+// 导入flutter_blue_plus以获取正确的类型，使用as避免名称冲突
+import 'package:flutter_blue_plus/flutter_blue_plus.dart' hide BluetoothService;
 import '../../../data/models/pairing_info.dart';
 import '../../../routes/app_pages.dart';
 import '../../../services/bluetooth_service.dart';
@@ -82,7 +83,7 @@ class PairingController extends GetxController {
   // 初始化蓝牙
   Future<void> _initBluetooth() async {
     try {
-      final isAvailable = await _bluetoothService.isAvailable();
+      final isAvailable = _bluetoothService.isBluetoothSupported;
       if (!isAvailable) {
         _showError('蓝牙不可用，请确保设备已开启蓝牙功能');
       }
@@ -101,11 +102,12 @@ class PairingController extends GetxController {
     
     try {
       // 检查蓝牙是否开启
-      final isBluetoothOn = await _bluetoothService.isEnabled();
+      final isBluetoothOn = _bluetoothService.bluetoothState == BluetoothAdapterState.on;
       if (!isBluetoothOn) {
         // 请求开启蓝牙
-        final enabled = await _bluetoothService.requestEnable();
-        if (!enabled) {
+        await _bluetoothService.enableBluetooth();
+        // 检查蓝牙是否成功开启
+        if (_bluetoothService.bluetoothState != BluetoothAdapterState.on) {
           _showError('请开启蓝牙以继续');
           isScanning.value = false;
           return;
@@ -116,8 +118,13 @@ class PairingController extends GetxController {
       _bluetoothService.startScan();
       
       // 监听蓝牙设备
-      final subscription = _bluetoothService.discoveredDevices.listen((devicesList) {
-        devices.value = devicesList;
+      final subscription = _bluetoothService.scanResults.listen((scanResultsList) {
+        // 转换ScanResult到BluetoothDeviceInfo
+        devices.value = scanResultsList.map((result) => BluetoothDeviceInfo(
+          id: result.device.remoteId.str,
+          name: _bluetoothService.getDeviceName(result.device),
+          rssi: result.rssi,
+        )).toList();
       });
       
       // 设置扫描超时
@@ -153,9 +160,10 @@ class PairingController extends GetxController {
       pairingStatus.value = PairingStatus.PENDING;
       
       // 保存配对信息
+      final deviceInfo = await _bluetoothService.createPairingInfo();
       final pairingInfo = PairingInfo(
-        deviceId: await _bluetoothService.getDeviceId(),
-        deviceName: await _bluetoothService.getDeviceName(),
+        deviceId: deviceInfo.deviceId,
+        deviceName: deviceInfo.deviceName,
         pairingCode: code,
         createdAt: DateTime.now(),
         expiresAt: DateTime.now().add(const Duration(minutes: 5)),
@@ -184,9 +192,16 @@ class PairingController extends GetxController {
     stopScanning();
     
     try {
+      // 查找扫描结果中对应的BluetoothDevice
+      final scanDevice = _bluetoothService.scanResults
+          .firstWhere((result) => result.device.remoteId.str == device.id)
+          .device;
+      
       // 连接设备
-      final connected = await _bluetoothService.connectToDevice(device.id);
-      if (connected) {
+      await _bluetoothService.connectToDevice(scanDevice);
+      
+      // 检查连接状态
+      if (_bluetoothService.isConnected.value) {
         pairingDeviceId.value = device.id;
         pairingDeviceName.value = device.name;
         pairingStatus.value = PairingStatus.PENDING;

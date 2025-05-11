@@ -49,7 +49,7 @@ class RecordView extends GetView<RecordController> {
       child: StepIndicator(
         currentStep: controller.currentStep.value,
         totalSteps: controller.steps.length,
-        titles: controller.steps.map((step) => step['title']!).toList(),
+        stepTitles: controller.steps.map((step) => step['title']!).toList(),
       ),
     );
   }
@@ -83,7 +83,7 @@ class RecordView extends GetView<RecordController> {
             width: double.infinity,
             child: PrimaryButton(
               text: '继续',
-              onPressed: controller.saveConsentStatement,
+              onPressed: controller.nextStep,
             ),
           ),
           const SizedBox(height: 16),
@@ -125,8 +125,8 @@ class RecordView extends GetView<RecordController> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
+              children: const [
+                Text(
                   '同意陈述录入',
                   style: TextStyle(
                     fontSize: 16,
@@ -134,7 +134,7 @@ class RecordView extends GetView<RecordController> {
                     color: ColorTheme.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   '请填写同意陈述并录制声音确认，这将作为有效证据',
                   style: TextStyle(

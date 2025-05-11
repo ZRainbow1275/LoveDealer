@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' as material;
 import 'package:get/get.dart';
 // import 'package:get_storage/get_storage.dart';
 import 'color_theme.dart';
@@ -11,7 +11,7 @@ class ThemeService {
   static bool _isDarkMode = false;
 
   /// 获取主题模式 - 如果未设置则返回亮色模式
-  ThemeMode get theme => _loadThemeFromBox() ? ThemeMode.dark : ThemeMode.light;
+  material.ThemeMode get theme => _loadThemeFromBox() ? material.ThemeMode.dark : material.ThemeMode.light;
 
   /// 从本地存储加载主题设置
   bool _loadThemeFromBox() => _isDarkMode; // _box.read(_key) ?? false;
@@ -21,7 +21,7 @@ class ThemeService {
 
   /// 切换主题
   void switchTheme() {
-    Get.changeThemeMode(_loadThemeFromBox() ? ThemeMode.light : ThemeMode.dark);
+    Get.changeThemeMode(_loadThemeFromBox() ? material.ThemeMode.light : material.ThemeMode.dark);
     _saveThemeToBox(!_loadThemeFromBox());
   }
 
@@ -31,199 +31,199 @@ class ThemeService {
   }
 
   /// 获取亮色主题
-  ThemeData get lightTheme {
-    return ThemeData(
+  material.ThemeData get lightTheme {
+    return material.ThemeData(
       primaryColor: ColorTheme.primaryColor,
-      scaffoldBackgroundColor: ColorTheme.backgroundLight,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.white,
+      scaffoldBackgroundColor: ColorTheme.background,
+      appBarTheme: const material.AppBarTheme(
+        backgroundColor: material.Colors.white,
         foregroundColor: ColorTheme.textPrimary,
         elevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(
+        iconTheme: material.IconThemeData(
           color: ColorTheme.textSecondary,
         ),
       ),
-      colorScheme: const ColorScheme.light().copyWith(
+      colorScheme: const material.ColorScheme.light().copyWith(
         primary: ColorTheme.primaryColor,
         secondary: ColorTheme.accentColor,
       ),
-      inputDecorationTheme: InputDecorationTheme(
+      inputDecorationTheme: material.InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: ColorTheme.borderColor),
+        fillColor: material.Colors.white,
+        border: material.OutlineInputBorder(
+          borderRadius: material.BorderRadius.circular(8),
+          borderSide: const material.BorderSide(color: ColorTheme.border),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: ColorTheme.borderColor),
+        enabledBorder: material.OutlineInputBorder(
+          borderRadius: material.BorderRadius.circular(8),
+          borderSide: const material.BorderSide(color: ColorTheme.border),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(
+        focusedBorder: material.OutlineInputBorder(
+          borderRadius: material.BorderRadius.circular(8),
+          borderSide: const material.BorderSide(
             color: ColorTheme.primaryColor,
             width: 2,
           ),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const material.EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
-      textTheme: const TextTheme(
-        headline1: TextStyle(
+      textTheme: const material.TextTheme(
+        displayLarge: material.TextStyle(
           color: ColorTheme.textPrimary,
-          fontWeight: FontWeight.bold,
+          fontWeight: material.FontWeight.bold,
         ),
-        headline2: TextStyle(
+        displayMedium: material.TextStyle(
           color: ColorTheme.textPrimary,
-          fontWeight: FontWeight.bold,
+          fontWeight: material.FontWeight.bold,
         ),
-        headline3: TextStyle(
+        displaySmall: material.TextStyle(
           color: ColorTheme.textPrimary,
-          fontWeight: FontWeight.bold,
+          fontWeight: material.FontWeight.bold,
         ),
-        headline4: TextStyle(
+        headlineMedium: material.TextStyle(
           color: ColorTheme.textPrimary,
-          fontWeight: FontWeight.bold,
+          fontWeight: material.FontWeight.bold,
         ),
-        headline5: TextStyle(
+        headlineSmall: material.TextStyle(
           color: ColorTheme.textPrimary,
-          fontWeight: FontWeight.bold,
+          fontWeight: material.FontWeight.bold,
         ),
-        headline6: TextStyle(
+        titleLarge: material.TextStyle(
           color: ColorTheme.textPrimary,
-          fontWeight: FontWeight.bold,
+          fontWeight: material.FontWeight.bold,
         ),
-        bodyText1: TextStyle(
+        bodyLarge: material.TextStyle(
           color: ColorTheme.textPrimary,
         ),
-        bodyText2: TextStyle(
+        bodyMedium: material.TextStyle(
           color: ColorTheme.textSecondary,
         ),
       ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
+      elevatedButtonTheme: material.ElevatedButtonThemeData(
+        style: material.ElevatedButton.styleFrom(
           backgroundColor: ColorTheme.primaryColor,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+          foregroundColor: material.Colors.white,
+          shape: const material.RoundedRectangleBorder(
+            borderRadius: material.BorderRadius.all(material.Radius.circular(8)),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          textStyle: const TextStyle(
+          padding: const material.EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          textStyle: const material.TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontWeight: material.FontWeight.bold,
           ),
         ),
       ),
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
+      textButtonTheme: material.TextButtonThemeData(
+        style: material.TextButton.styleFrom(
           foregroundColor: ColorTheme.primaryColor,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          textStyle: const TextStyle(
+          padding: const material.EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          textStyle: const material.TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontWeight: material.FontWeight.bold,
           ),
         ),
       ),
-      dividerTheme: const DividerThemeData(
-        color: ColorTheme.borderColor,
+      dividerTheme: const material.DividerThemeData(
+        color: ColorTheme.border,
         thickness: 1,
       ),
-      cardTheme: CardTheme(
-        color: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+      cardTheme: material.CardTheme(
+        color: material.Colors.white,
+        shape: const material.RoundedRectangleBorder(
+          borderRadius: material.BorderRadius.all(material.Radius.circular(12)),
         ),
         elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.1),
+        shadowColor: material.Colors.black.withOpacity(0.1),
       ),
     );
   }
 
   /// 获取暗色主题
-  ThemeData get darkTheme {
-    return ThemeData(
-      brightness: Brightness.dark,
+  material.ThemeData get darkTheme {
+    return material.ThemeData(
+      brightness: material.Brightness.dark,
       primaryColor: ColorTheme.primaryColor,
-      scaffoldBackgroundColor: ColorTheme.backgroundDark,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: ColorTheme.cardDark,
-        foregroundColor: Colors.white,
+      scaffoldBackgroundColor: ColorTheme.darkBackground,
+      appBarTheme: const material.AppBarTheme(
+        backgroundColor: ColorTheme.darkCardBackground,
+        foregroundColor: material.Colors.white,
         elevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(
-          color: Colors.white70,
+        iconTheme: material.IconThemeData(
+          color: material.Colors.white70,
         ),
       ),
-      colorScheme: const ColorScheme.dark().copyWith(
+      colorScheme: const material.ColorScheme.dark().copyWith(
         primary: ColorTheme.primaryColor,
         secondary: ColorTheme.accentColor,
-        surface: ColorTheme.cardDark,
+        surface: ColorTheme.darkCardBackground,
       ),
-      inputDecorationTheme: InputDecorationTheme(
+      inputDecorationTheme: material.InputDecorationTheme(
         filled: true,
-        fillColor: ColorTheme.cardDark,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[700]!),
+        fillColor: ColorTheme.darkCardBackground,
+        border: material.OutlineInputBorder(
+          borderRadius: material.BorderRadius.circular(8),
+          borderSide: material.BorderSide(color: material.Colors.grey[700]!),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[700]!),
+        enabledBorder: material.OutlineInputBorder(
+          borderRadius: material.BorderRadius.circular(8),
+          borderSide: material.BorderSide(color: material.Colors.grey[700]!),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(
+        focusedBorder: material.OutlineInputBorder(
+          borderRadius: material.BorderRadius.circular(8),
+          borderSide: const material.BorderSide(
             color: ColorTheme.primaryColor,
             width: 2,
           ),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const material.EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
-      textTheme: TextTheme(
-        headline1: const TextStyle(color: Colors.white),
-        headline2: const TextStyle(color: Colors.white),
-        headline3: const TextStyle(color: Colors.white),
-        headline4: const TextStyle(color: Colors.white),
-        headline5: const TextStyle(color: Colors.white),
-        headline6: const TextStyle(color: Colors.white),
-        bodyText1: const TextStyle(color: Colors.white),
-        bodyText2: TextStyle(color: Colors.grey[300]),
+      textTheme: material.TextTheme(
+        displayLarge: const material.TextStyle(color: material.Colors.white),
+        displayMedium: const material.TextStyle(color: material.Colors.white),
+        displaySmall: const material.TextStyle(color: material.Colors.white),
+        headlineMedium: const material.TextStyle(color: material.Colors.white),
+        headlineSmall: const material.TextStyle(color: material.Colors.white),
+        titleLarge: const material.TextStyle(color: material.Colors.white),
+        bodyLarge: const material.TextStyle(color: material.Colors.white),
+        bodyMedium: material.TextStyle(color: material.Colors.grey[300]),
       ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
+      elevatedButtonTheme: material.ElevatedButtonThemeData(
+        style: material.ElevatedButton.styleFrom(
           backgroundColor: ColorTheme.primaryColor,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+          foregroundColor: material.Colors.white,
+          shape: const material.RoundedRectangleBorder(
+            borderRadius: material.BorderRadius.all(material.Radius.circular(8)),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          textStyle: const TextStyle(
+          padding: const material.EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          textStyle: const material.TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontWeight: material.FontWeight.bold,
           ),
         ),
       ),
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
+      textButtonTheme: material.TextButtonThemeData(
+        style: material.TextButton.styleFrom(
           foregroundColor: ColorTheme.primaryColor,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          textStyle: const TextStyle(
+          padding: const material.EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          textStyle: const material.TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontWeight: material.FontWeight.bold,
           ),
         ),
       ),
-      dividerTheme: DividerThemeData(
-        color: Colors.grey[700],
+      dividerTheme: material.DividerThemeData(
+        color: material.Colors.grey[700],
         thickness: 1,
       ),
-      cardTheme: CardTheme(
-        color: ColorTheme.cardDark,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+      cardTheme: material.CardTheme(
+        color: ColorTheme.darkCardBackground,
+        shape: const material.RoundedRectangleBorder(
+          borderRadius: material.BorderRadius.all(material.Radius.circular(12)),
         ),
         elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.3),
+        shadowColor: material.Colors.black.withOpacity(0.3),
       ),
     );
   }

@@ -6,12 +6,10 @@ import 'package:flutter_sound/flutter_sound.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../data/models/history_record.dart';
-import '../../../data/models/pairing_info.dart';
 import '../../../routes/app_pages.dart';
 import '../../../services/bluetooth_service.dart';
 import '../../../services/storage_service.dart';
 import '../../../services/location_service.dart';
-import '../../../services/hash_service.dart';
 import '../../../utils/logger.dart';
 
 class RecordController extends GetxController {
@@ -19,7 +17,6 @@ class RecordController extends GetxController {
   final BluetoothService _bluetoothService = Get.find<BluetoothService>();
   final StorageService _storageService = Get.find<StorageService>();
   final LocationService _locationService = Get.find<LocationService>();
-  final HashService _hashService = Get.find<HashService>();
   final Logger _logger = Logger();
   
   // 状态变量
@@ -50,58 +47,118 @@ class RecordController extends GetxController {
   
   // 步骤标题和描述
   final List<Map<String, String>> steps = [
-    {
-      'title': '同意录入',
-      'description': '录制双方的同意陈述',
-    },
-    {
-      'title': '人脸识别',
-      'description': '进行面部识别以验证身份',
-    },
-    {
-      'title': '拍照记录',
-      'description': '拍摄照片作为辅助证据',
-    },
-    {
-      'title': '完成记录',
-      'description': '确认并存储记录',
-    },
+    {'title': '同意录入', 'description': '录入双方同意的陈述'},
+    {'title': '人脸识别', 'description': '通过人脸识别验证双方身份'},
+    {'title': '拍照记录', 'description': '拍摄现场照片作为辅助证据'},
+    {'title': '完成记录', 'description': '生成记录并加密存储'},
   ];
-  
+
   @override
   void onInit() {
     super.onInit();
-    _initRecorder();
     _initRecord();
   }
-  
+
   @override
   void onClose() {
     consentStatementController.dispose();
-    _connectionCheckTimer?.cancel();
-    _recordingTimer?.cancel();
     _recorder.closeRecorder();
     _player.closePlayer();
+    _recordingTimer?.cancel();
+    _connectionCheckTimer?.cancel();
     super.onClose();
+  }
+
+  // 初始化记录
+  Future<void> _initRecord() async {
+    try {
+      isLoading.value = true;
+      
+      // 检查是否来自配对页面
+      final args = Get.arguments;
+      if (args != null && args['partnerId'] != null && args['partnerName'] != null) {
+        partnerDeviceId.value = args['partnerId'];
+        partnerName.value = args['partnerName'];
+      } else {
+        // 如果没有配对信息，返回主页
+        Get.back();
+        return;
+      }
+      
+      // 创建记录ID
+      recordId.value = DateTime.now().millisecondsSinceEpoch.toString();
+      
+      // 获取当前位置
+      await _fetchCurrentLocation();
+      
+      // 初始化录音功能
+      await _initRecorder();
+      
+      // 启动连接检查
+      _startConnectionCheck();
+      
+      isLoading.value = false;
+    } catch (e) {
+      _logger.e('初始化记录失败', error: e);
+      Get.snackbar('错误', '初始化记录失败', snackPosition: SnackPosition.BOTTOM);
+      isLoading.value = false;
+    }
+  }
+  
+  // 获取当前位置
+  Future<void> _fetchCurrentLocation() async {
+    try {
+      final position = await _locationService.getCurrentLocation();
+      if (position != null && position.latitude != null && position.longitude != null) {
+        final address = await _locationService.getAddressFromCoordinates(position.latitude!, position.longitude!);
+        currentLocation.value = address;
+      } else {
+        currentLocation.value = '未知位置';
+      }
+    } catch (e) {
+      _logger.e('获取位置失败', error: e);
+      currentLocation.value = '未知位置';
+    }
   }
   
   // 初始化录音器
   Future<void> _initRecorder() async {
+    final status = await Permission.microphone.request();
+    if (status != PermissionStatus.granted) {
+      _logger.e('麦克风权限被拒绝');
+      return;
+    }
+    
+    await _recorder.openRecorder();
+    await _player.openPlayer();
+  }
+  
+  // 启动连接检查
+  void _startConnectionCheck() {
+    _connectionCheckTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _checkConnection();
+    });
+  }
+  
+  // 检查连接
+  Future<void> _checkConnection() async {
     try {
-      final status = await Permission.microphone.request();
-      if (status != PermissionStatus.granted) {
-        Get.snackbar('错误', '需要麦克风权限才能继续', snackPosition: SnackPosition.BOTTOM);
-        return;
+      final isConnected = await _bluetoothService.isDeviceConnected(partnerDeviceId.value);
+      if (!isConnected) {
+        Get.snackbar(
+          '连接断开',
+          '与伙伴设备的连接已断开，请重新配对',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 5),
+          onTap: (_) {
+            Get.back();
+          },
+        );
       }
-      
-      await _recorder.openRecorder();
-      await _player.openPlayer();
-      
-      _recorder.setSubscriptionDuration(const Duration(milliseconds: 500));
-      _player.setSubscriptionDuration(const Duration(milliseconds: 500));
     } catch (e) {
-      _logger.e('初始化录音器失败', error: e);
-      Get.snackbar('错误', '初始化录音器失败', snackPosition: SnackPosition.BOTTOM);
+      _logger.e('检查连接失败', error: e);
     }
   }
   
@@ -199,255 +256,74 @@ class RecordController extends GetxController {
     recordingDuration.value = '$minutes:$seconds';
   }
   
-  // 初始化记录
-  Future<void> _initRecord() async {
-    isLoading.value = true;
-    try {
-      // 获取配对信息
-      final pairingInfos = await _storageService.getAllPairingInfo();
-      final activePairing = pairingInfos.where((p) => p.status == PairingStatus.PAIRED).toList();
-      
-      if (activePairing.isEmpty) {
-        Get.snackbar('错误', '未找到有效的配对信息', snackPosition: SnackPosition.BOTTOM);
-        Get.back();
-        return;
+  // 继续到下一步
+  void nextStep() {
+    if (currentStep.value < steps.length - 1) {
+      currentStep.value++;
+      switch (currentStep.value) {
+        case 1: // 人脸识别
+          Get.toNamed(Routes.FACE_RECOGNITION, arguments: {'recordId': recordId.value});
+          break;
+        case 2: // 拍照记录
+          Get.toNamed(Routes.PHOTO_CAPTURE, arguments: {'recordId': recordId.value});
+          break;
+        case 3: // 完成记录
+          Get.toNamed(Routes.COMPLETION, arguments: {'recordId': recordId.value});
+          break;
       }
-      
-      final pairing = activePairing.first;
-      
-      // 获取位置信息
-      String locationStr = '';
-      try {
-        final location = await _locationService.getCurrentLocation();
-        if (location != null) {
-          locationStr = '${location.latitude}, ${location.longitude}';
-          final address = await _locationService.getAddressFromCoordinates(
-            location.latitude, 
-            location.longitude
-          );
-          if (address.isNotEmpty) {
-            locationStr = address;
-          }
-        }
-      } catch (e) {
-        _logger.e('获取位置信息失败', error: e);
-      }
-      
-      // 设置状态变量
-      partnerName.value = pairing.partnerDeviceName ?? '未知设备';
-      partnerDeviceId.value = pairing.partnerDeviceId ?? '';
-      currentLocation.value = locationStr;
-      
-      // 创建新的历史记录
-      final newRecord = HistoryRecord(
-        partnerName: partnerName.value,
-        partnerDeviceId: partnerDeviceId.value,
-        location: currentLocation.value,
-        createdAt: DateTime.now(),
-        status: RecordStatus.CREATED,
-      );
-      
-      await _storageService.saveHistoryRecord(newRecord);
-      recordId.value = newRecord.id;
-      
-      // 启动连接检查定时器
-      _startConnectionCheck();
-    } catch (e) {
-      _logger.e('初始化记录失败', error: e);
-      Get.snackbar('错误', '初始化记录失败', snackPosition: SnackPosition.BOTTOM);
-    } finally {
-      isLoading.value = false;
     }
   }
   
-  // 启动连接检查
-  void _startConnectionCheck() {
-    _connectionCheckTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-      if (partnerDeviceId.value.isEmpty) return;
-      
-      final isConnected = await _bluetoothService.isDeviceConnected(partnerDeviceId.value);
-      if (!isConnected) {
-        _connectionCheckTimer?.cancel();
-        Get.dialog(
-          AlertDialog(
-            title: const Text('连接断开'),
-            content: const Text('与配对设备的连接已断开，请重新配对后继续记录'),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Get.back(); // 关闭对话框
-                  Get.back(); // 返回上一页
-                },
-                child: const Text('确定'),
-              ),
-            ],
-          ),
-          barrierDismissible: false,
-        );
-      }
-    });
-  }
-  
-  // 保存同意陈述
-  Future<void> saveConsentStatement() async {
-    if (consentStatementController.text.isEmpty) {
-      Get.snackbar('提示', '请输入同意陈述', snackPosition: SnackPosition.BOTTOM);
-      return;
+  // 返回上一步
+  void previousStep() {
+    if (currentStep.value > 0) {
+      currentStep.value--;
     }
-    
-    if (!hasRecording.value || audioFilePath.isEmpty) {
-      Get.dialog(
-        AlertDialog(
-          title: const Text('确认'),
-          content: const Text('您尚未录制声音确认，是否继续？录音可以增加证据的可靠性。'),
-          actions: [
-            TextButton(
-              onPressed: () => Get.back(),
-              child: const Text('返回录制'),
-            ),
-            TextButton(
-              onPressed: () {
-                Get.back();
-                _saveAndContinue();
-              },
-              child: const Text('继续'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-    
-    _saveAndContinue();
-  }
-  
-  // 保存并继续
-  Future<void> _saveAndContinue() async {
-    try {
-      final record = await _storageService.getHistoryRecordById(recordId.value);
-      if (record == null) {
-        throw Exception('未找到记录');
-      }
-      
-      final updatedRecord = record.copyWith(
-        consentStatement: consentStatementController.text,
-        audioRecordPath: audioFilePath.value,
-        status: RecordStatus.STATEMENT_RECORDED,
-      );
-      
-      await _storageService.saveHistoryRecord(updatedRecord);
-      
-      recordStatus.value = RecordStatus.STATEMENT_RECORDED;
-      currentStep.value = 1; // 进入下一步
-      
-      Get.toNamed(Routes.FACE_RECOGNITION, arguments: {'recordId': recordId.value});
-    } catch (e) {
-      _logger.e('保存同意陈述失败', error: e);
-      Get.snackbar('错误', '保存同意陈述失败', snackPosition: SnackPosition.BOTTOM);
-    }
-  }
-  
-  // 处理人脸识别结果
-  Future<void> processFaceRecognitionResult(String faceImagePath) async {
-    try {
-      final record = await _storageService.getHistoryRecordById(recordId.value);
-      if (record == null) {
-        throw Exception('未找到记录');
-      }
-      
-      final updatedRecord = record.copyWith(
-        faceRecognitionPath: faceImagePath,
-        status: RecordStatus.FACE_RECOGNIZED,
-      );
-      
-      await _storageService.saveHistoryRecord(updatedRecord);
-      
-      recordStatus.value = RecordStatus.FACE_RECOGNIZED;
-      currentStep.value = 2; // 进入下一步
-      
-      Get.toNamed(Routes.PHOTO_CAPTURE, arguments: {'recordId': recordId.value});
-    } catch (e) {
-      _logger.e('处理人脸识别结果失败', error: e);
-      Get.snackbar('错误', '处理人脸识别结果失败', snackPosition: SnackPosition.BOTTOM);
-    }
-  }
-  
-  // 处理照片拍摄结果
-  Future<void> processPhotoCaptureResult(List<String> photosPaths) async {
-    try {
-      final record = await _storageService.getHistoryRecordById(recordId.value);
-      if (record == null) {
-        throw Exception('未找到记录');
-      }
-      
-      final updatedRecord = record.copyWith(
-        photosPaths: photosPaths,
-        status: RecordStatus.PHOTOS_CAPTURED,
-      );
-      
-      await _storageService.saveHistoryRecord(updatedRecord);
-      
-      recordStatus.value = RecordStatus.PHOTOS_CAPTURED;
-      currentStep.value = 3; // 进入下一步
-      
-      // 计算记录的哈希值
-      final recordData = updatedRecord.toJson();
-      final hashValue = await _hashService.calculateHash(recordData.toString());
-      
-      final completedRecord = updatedRecord.copyWith(
-        isCompleted: true,
-        hashValue: hashValue,
-        status: RecordStatus.COMPLETED,
-      );
-      
-      await _storageService.saveHistoryRecord(completedRecord);
-      
-      recordStatus.value = RecordStatus.COMPLETED;
-      
-      Get.toNamed(Routes.COMPLETION, arguments: {'recordId': recordId.value});
-    } catch (e) {
-      _logger.e('处理照片拍摄结果失败', error: e);
-      Get.snackbar('错误', '处理照片拍摄结果失败', snackPosition: SnackPosition.BOTTOM);
-    }
-  }
-  
-  // 完成记录流程
-  void completeRecordProcess() {
-    Get.offAllNamed(Routes.HOME);
   }
   
   // 取消记录
-  Future<void> cancelRecord() async {
+  void cancelRecord() {
     Get.dialog(
       AlertDialog(
         title: const Text('取消记录'),
-        content: const Text('确定要取消当前记录吗？已录入的信息将会丢失。'),
+        content: const Text('确定要取消当前记录吗？所有数据将会丢失。'),
         actions: [
           TextButton(
-            onPressed: () => Get.back(),
             child: const Text('继续记录'),
+            onPressed: () => Get.back(),
           ),
           TextButton(
-            onPressed: () async {
-              Get.back(); // 关闭对话框
-              
-              try {
-                // 删除当前记录
-                if (recordId.value.isNotEmpty) {
-                  await _storageService.deleteHistoryRecord(recordId.value);
-                }
-                
-                Get.offAllNamed(Routes.HOME);
-              } catch (e) {
-                _logger.e('取消记录失败', error: e);
-                Get.snackbar('错误', '取消记录失败', snackPosition: SnackPosition.BOTTOM);
-              }
+            child: const Text('取消记录'),
+            onPressed: () {
+              Get.back();
+              Get.back();
             },
-            child: const Text('确认取消'),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
           ),
         ],
       ),
     );
+  }
+  
+  // 前往人脸识别页面
+  void goToFaceRecognition() {
+    Get.toNamed(Routes.FACE_RECOGNITION, arguments: {'recordId': recordId.value});
+  }
+  
+  // 保存记录
+  Future<bool> saveRecord() async {
+    try {
+      final record = HistoryRecord(
+        partnerName: partnerName.value,
+        partnerDeviceId: partnerDeviceId.value,
+        location: currentLocation.value,
+        consentStatement: consentStatementController.text,
+        status: RecordStatus.COMPLETED,
+      );
+      await _storageService.saveHistoryRecord(record);
+      return true;
+    } catch (e) {
+      _logger.e('保存记录失败', error: e);
+      return false;
+    }
   }
 } 

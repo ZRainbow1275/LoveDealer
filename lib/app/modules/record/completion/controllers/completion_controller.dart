@@ -1,8 +1,8 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:cross_file/cross_file.dart';
 import '../../../../data/models/history_record.dart';
 import '../../../../routes/app_pages.dart';
 import '../../../../services/storage_service.dart';
@@ -94,7 +94,7 @@ class CompletionController extends GetxController {
       
       // 分享文件
       await Share.shareXFiles(
-        [(await infoFile.create()).path].map((path) => XFile(path)).toList(),
+        [XFile((await infoFile.create()).path)],
         text: '记录分享',
       );
     } catch (e) {

@@ -78,7 +78,7 @@ class LoadingDialog extends StatelessWidget {
 
   // 便捷方法，用于关闭加载对话框
   static void hide() {
-    if (Get.isDialogOpen ?? false) {
+    if (Get.isDialogOpen!) {
       Get.back();
     }
   }

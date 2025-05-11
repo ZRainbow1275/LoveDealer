@@ -79,7 +79,6 @@ class DeviceUtils {
       'hardware': build.hardware,
       'host': build.host,
       'isPhysicalDevice': build.isPhysicalDevice,
-      'serialNumber': build.serialNumber,
       'type': build.type,
     };
   }
@@ -162,28 +161,6 @@ class DeviceUtils {
       'numberOfCores': data.numberOfCores,
       'computerName': data.computerName,
       'systemMemoryInMegabytes': data.systemMemoryInMegabytes,
-      'userName': data.userName,
-      'majorVersion': data.majorVersion,
-      'minorVersion': data.minorVersion,
-      'buildNumber': data.buildNumber,
-      'platformId': data.platformId,
-      'csdVersion': data.csdVersion,
-      'servicePackMajor': data.servicePackMajor,
-      'servicePackMinor': data.servicePackMinor,
-      'suitMask': data.suitMask,
-      'productType': data.productType,
-      'reserved': data.reserved,
-      'buildLab': data.buildLab,
-      'buildLabEx': data.buildLabEx,
-      'digitalProductId': data.digitalProductId,
-      'displayVersion': data.displayVersion,
-      'editionId': data.editionId,
-      'installDate': data.installDate,
-      'productId': data.productId,
-      'productName': data.productName,
-      'registeredOwner': data.registeredOwner,
-      'releaseId': data.releaseId,
-      'deviceId': data.deviceId,
     };
   }
   
@@ -247,12 +224,6 @@ class DeviceUtils {
     } else if (Platform.isMacOS) {
       return _deviceData?['osRelease'] ?? '未知版本';
     } else if (Platform.isWindows) {
-      final major = _deviceData?['majorVersion'];
-      final minor = _deviceData?['minorVersion'];
-      final build = _deviceData?['buildNumber'];
-      if (major != null && minor != null) {
-        return '$major.$minor${build != null ? '.$build' : ''}';
-      }
       return '未知版本';
     }
     return '未知版本';
@@ -265,7 +236,7 @@ class DeviceUtils {
     } else if (Platform.isIOS) {
       return _deviceData?['identifierForVendor'] ?? '';
     } else if (Platform.isWindows) {
-      return _deviceData?['deviceId'] ?? '';
+      return '';
     }
     return '';
   }

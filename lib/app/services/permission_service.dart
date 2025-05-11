@@ -3,6 +3,9 @@ import 'package:permission_handler/permission_handler.dart';
 
 /// 权限服务，用于管理应用权限
 class PermissionService extends GetxService {
+  /// 获取PermissionService实例
+  static PermissionService get to => Get.find<PermissionService>();
+
   // 权限状态
   final RxMap<Permission, PermissionStatus> permissionStatus = <Permission, PermissionStatus>{}.obs;
   

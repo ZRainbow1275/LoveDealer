@@ -5,13 +5,10 @@ import 'package:get/get.dart';
 import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../../../../services/storage_service.dart';
-import '../../../../routes/app_pages.dart';
 import '../../../../utils/logger.dart';
 
 class PhotoCaptureController extends GetxController {
   // 服务
-  final StorageService _storageService = Get.find<StorageService>();
   final Logger _logger = Logger();
   
   // 相机控制
@@ -109,6 +106,8 @@ class PhotoCaptureController extends GetxController {
       
       await cameraController!.initialize();
       isCameraInitialized.value = true;
+      // 初始化后设置闪光灯模式
+      await cameraController!.setFlashMode(flashEnabled.value ? FlashMode.torch : FlashMode.off);
     } catch (e) {
       _logger.e('初始化相机失败', error: e);
       Get.snackbar('错误', '初始化相机失败: $e', snackPosition: SnackPosition.BOTTOM);
@@ -145,10 +144,11 @@ class PhotoCaptureController extends GetxController {
         ResolutionPreset.high,
         enableAudio: false,
         imageFormatGroup: ImageFormatGroup.jpeg,
-        flashMode: flashEnabled.value ? FlashMode.torch : FlashMode.off,
       );
       
       await cameraController!.initialize();
+      // 初始化后设置闪光灯模式
+      await cameraController!.setFlashMode(flashEnabled.value ? FlashMode.torch : FlashMode.off);
     } catch (e) {
       _logger.e('切换相机失败', error: e);
       Get.snackbar('错误', '切换相机失败: $e', snackPosition: SnackPosition.BOTTOM);

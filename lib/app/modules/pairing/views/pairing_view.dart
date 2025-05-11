@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../widgets/buttons/buttons.dart';
-import '../../../../widgets/indicators/indicators.dart';
+import '../../../data/models/pairing_info.dart';
 import '../../../theme/color_theme.dart';
 import '../controllers/pairing_controller.dart';
 
@@ -25,19 +25,22 @@ class PairingView extends GetView<PairingController> {
       body: SafeArea(
         child: Obx(() {
           // 根据配对状态显示不同的界面
-          switch (controller.pairingStatus.value) {
-            case PairingStatus.INIT:
-              return _buildInitialView();
-            case PairingStatus.CODE_GENERATED:
+          if (controller.pairingStatus.value == PairingStatus.PAIRED) {
+            return _buildPairedView();
+          } else if (controller.pairingStatus.value == PairingStatus.EXPIRED) {
+            return _buildExpiredView();
+          } else if (controller.pairingStatus.value == PairingStatus.PENDING) {
+            // 根据不同的PENDING状态下的情况显示不同界面
+            if (controller.pairingCode.value.isNotEmpty) {
               return _buildPairingCodeView();
-            case PairingStatus.DEVICE_SELECTED:
+            } else if (controller.pairingDeviceName.value.isNotEmpty) {
               return _buildDeviceSelectedView();
-            case PairingStatus.PAIRED:
-              return _buildPairedView();
-            case PairingStatus.EXPIRED:
-              return _buildExpiredView();
-            default:
+            } else {
               return _buildInitialView();
+            }
+          } else {
+            // 默认视图
+            return _buildInitialView();
           }
         }),
       ),
@@ -283,8 +286,8 @@ class PairingView extends GetView<PairingController> {
                 ),
               ],
             ),
-            child: const Column(
-              children: [
+            child: Column(
+              children: const [
                 Icon(
                   Icons.timer_off,
                   color: ColorTheme.warning,

@@ -50,6 +50,23 @@ class HistoryRecord {
   @HiveField(14)
   final List<String> evidenceIds;
   
+  // 额外的字段，用于哈希验证
+  String? dataHash;
+  String? audioHash;
+  String? masterHash;
+  final Map<String, String> photoHashes = {};
+  final Map<String, String> faceHashes = {};
+  
+  // 兼容性属性
+  String? get audioFilePath => audioRecordPath;
+  
+  List<String> get photoFilePaths => photosPaths ?? [];
+  
+  List<String> get faceImagePaths => faceRecognitionPath != null ? [faceRecognitionPath!] : [];
+  
+  // 时间戳别名，兼容旧代码
+  DateTime get timestamp => createdAt;
+  
   HistoryRecord({
     String? id,
     required this.partnerName,
@@ -87,7 +104,7 @@ class HistoryRecord {
     List<String>? evidenceIds,
   }) {
     return HistoryRecord(
-      id: id ?? this.id,
+      id: id,
       partnerName: partnerName ?? this.partnerName,
       partnerDeviceId: partnerDeviceId ?? this.partnerDeviceId,
       location: location ?? this.location,
@@ -211,7 +228,7 @@ extension RecordStatusExtension on RecordStatus {
       case RecordStatus.FACE_RECOGNIZED:
         return '已人脸识别';
       case RecordStatus.PHOTOS_CAPTURED:
-        return '已拍照';
+        return '已拍照记录';
       case RecordStatus.COMPLETED:
         return '已完成';
       case RecordStatus.VERIFIED:
@@ -221,8 +238,27 @@ extension RecordStatusExtension on RecordStatus {
     }
   }
   
-  static RecordStatus fromString(String status) {
-    switch (status) {
+  String get description {
+    switch (this) {
+      case RecordStatus.CREATED:
+        return '记录已创建，等待录入信息';
+      case RecordStatus.STATEMENT_RECORDED:
+        return '同意陈述已录制';
+      case RecordStatus.FACE_RECOGNIZED:
+        return '已完成人脸识别';
+      case RecordStatus.PHOTOS_CAPTURED:
+        return '已完成照片拍摄';
+      case RecordStatus.COMPLETED:
+        return '记录已完成并保存';
+      case RecordStatus.VERIFIED:
+        return '记录已通过验证';
+      case RecordStatus.INVALIDATED:
+        return '记录验证失败或已失效';
+    }
+  }
+  
+  static RecordStatus fromString(String value) {
+    switch (value) {
       case 'RecordStatus.CREATED':
         return RecordStatus.CREATED;
       case 'RecordStatus.STATEMENT_RECORDED':
@@ -241,4 +277,32 @@ extension RecordStatusExtension on RecordStatus {
         return RecordStatus.CREATED;
     }
   }
-} 
+  
+  int get value {
+    switch (this) {
+      case RecordStatus.CREATED:
+        return statusCreated;
+      case RecordStatus.STATEMENT_RECORDED:
+        return statusStatementRecorded;
+      case RecordStatus.FACE_RECOGNIZED:
+        return statusFaceRecognized;
+      case RecordStatus.PHOTOS_CAPTURED:
+        return statusPhotosCaptured;
+      case RecordStatus.COMPLETED:
+        return statusCompleted;
+      case RecordStatus.VERIFIED:
+        return statusVerified;
+      case RecordStatus.INVALIDATED:
+        return statusInvalidated;
+    }
+  }
+}
+
+// 状态常量，用于与原生代码交互
+const statusCreated = 0;
+const statusStatementRecorded = 1;
+const statusFaceRecognized = 2;
+const statusPhotosCaptured = 3;
+const statusCompleted = 4;
+const statusVerified = 5;
+const statusInvalidated = 6; 

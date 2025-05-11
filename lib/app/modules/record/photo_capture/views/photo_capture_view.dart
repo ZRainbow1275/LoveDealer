@@ -6,7 +6,7 @@ import '../../../../../widgets/buttons/buttons.dart';
 import '../../../../../widgets/indicators/indicators.dart';
 import '../../../../theme/color_theme.dart';
 import '../controllers/photo_capture_controller.dart';
-import '../../../controllers/record_controller.dart';
+import '../../controllers/record_controller.dart';
 
 class PhotoCaptureView extends GetView<PhotoCaptureController> {
   const PhotoCaptureView({Key? key}) : super(key: key);
@@ -57,7 +57,7 @@ class PhotoCaptureView extends GetView<PhotoCaptureController> {
       child: StepIndicator(
         currentStep: recordController.currentStep.value,
         totalSteps: recordController.steps.length,
-        titles: recordController.steps.map((step) => step['title']!).toList(),
+        stepTitles: recordController.steps.map((step) => step['title']!).toList(),
       ),
     );
   }
@@ -68,7 +68,7 @@ class PhotoCaptureView extends GetView<PhotoCaptureController> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(
-            Icons.camera_alt_off,
+            Icons.camera_alt,
             size: 64,
             color: ColorTheme.warning,
           ),
@@ -103,15 +103,15 @@ class PhotoCaptureView extends GetView<PhotoCaptureController> {
   }
 
   Widget _buildLoadingView() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
+          const CircularProgressIndicator(
             color: ColorTheme.primaryColor,
           ),
-          SizedBox(height: 16),
-          Text('正在初始化相机...'),
+          const SizedBox(height: 16),
+          const Text('正在初始化相机...'),
         ],
       ),
     );
@@ -363,7 +363,7 @@ class PhotoCaptureView extends GetView<PhotoCaptureController> {
             children: [
               Expanded(
                 child: Text(
-                  '已拍摄 ${controller.capturedPhotos.length} 张，${controller.isEnoughPhotos ? '可完成' : '至少需要 ${controller.minPhotos} 张'}',
+                  '已拍摄 ${controller.capturedPhotos.length} 张，${controller.isEnoughPhotos.value ? '可完成' : '至少需要 ${controller.minPhotos} 张'}',
                   style: const TextStyle(
                     fontSize: 14,
                     color: ColorTheme.textSecondary,
@@ -393,7 +393,7 @@ class PhotoCaptureView extends GetView<PhotoCaptureController> {
             width: double.infinity,
             child: PrimaryButton(
               text: '完成拍摄',
-              onPressed: controller.isEnoughPhotos && !controller.isCapturing.value
+              onPressed: controller.isEnoughPhotos.value && !controller.isCapturing.value
                   ? controller.completePhotoCapture
                   : null,
             ),
@@ -471,19 +471,19 @@ class PhotoCaptureView extends GetView<PhotoCaptureController> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.arrow_back_ios),
+                          icon: Icon(Icons.arrow_back_ios),
                           onPressed: controller.previousPhoto,
                           color: ColorTheme.primaryColor,
                         ),
                         Text(
                           '${controller.currentPhotoIndex.value + 1} / ${controller.capturedPhotos.length}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.arrow_forward_ios),
+                          icon: Icon(Icons.arrow_forward_ios),
                           onPressed: controller.nextPhoto,
                           color: ColorTheme.primaryColor,
                         ),
@@ -529,7 +529,7 @@ class PhotoCaptureView extends GetView<PhotoCaptureController> {
             width: double.infinity,
             child: PrimaryButton(
               text: '完成拍摄',
-              onPressed: controller.isEnoughPhotos
+              onPressed: controller.isEnoughPhotos.value
                   ? controller.completePhotoCapture
                   : null,
             ),

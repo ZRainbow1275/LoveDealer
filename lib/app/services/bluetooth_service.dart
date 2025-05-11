@@ -14,14 +14,11 @@ import '../data/models/pairing_info.dart';
 class BluetoothService extends GetxService {
   static BluetoothService get to => Get.find<BluetoothService>();
   
-  // 蓝牙实例
-  final FlutterBluePlus _flutterBlue = FlutterBluePlus.instance;
+  // 蓝牙状态
+  final Rx<BluetoothAdapterState> _bluetoothState = BluetoothAdapterState.unknown.obs;
   
   // 是否支持蓝牙
   final RxBool _isBluetoothSupported = true.obs;
-  
-  // 蓝牙状态
-  final Rx<BluetoothState> _bluetoothState = BluetoothState.unknown.obs;
   
   // 是否正在扫描
   final RxBool _isScanning = false.obs;
@@ -47,7 +44,7 @@ class BluetoothService extends GetxService {
   StreamSubscription? _connectionSubscription;
   
   bool get isBluetoothSupported => _isBluetoothSupported.value;
-  BluetoothState get bluetoothState => _bluetoothState.value;
+  BluetoothAdapterState get bluetoothState => _bluetoothState.value;
   bool get isScanning => _isScanning.value;
   
   @override
@@ -68,9 +65,9 @@ class BluetoothService extends GetxService {
   Future<void> _initBluetooth() async {
     try {
       // 监听蓝牙状态
-      _stateSubscription = _flutterBlue.state.listen((state) {
+      _stateSubscription = FlutterBluePlus.adapterState.listen((state) {
         _bluetoothState.value = state;
-        if (state == BluetoothState.off) {
+        if (state == BluetoothAdapterState.off) {
           _isScanning.value = false;
           scanResults.clear();
           isConnected.value = false;
@@ -79,7 +76,7 @@ class BluetoothService extends GetxService {
       });
       
       // 初始获取蓝牙状态
-      _bluetoothState.value = await _flutterBlue.state.first;
+      _bluetoothState.value = await FlutterBluePlus.adapterState.first;
     } catch (e) {
       _isBluetoothSupported.value = false;
       debugPrint('蓝牙初始化失败: $e');
@@ -90,7 +87,7 @@ class BluetoothService extends GetxService {
   Future<void> enableBluetooth() async {
     // 注意：在iOS上无法通过代码打开蓝牙，需要用户手动操作
     try {
-      await _flutterBlue.turnOn();
+      await FlutterBluePlus.turnOn();
     } catch (e) {
       debugPrint('打开蓝牙失败: $e');
     }
@@ -98,7 +95,7 @@ class BluetoothService extends GetxService {
   
   /// 开始扫描
   Future<void> startScan({Duration? timeout}) async {
-    if (_bluetoothState.value != BluetoothState.on) {
+    if (_bluetoothState.value != BluetoothAdapterState.on) {
       throw Exception('蓝牙未开启');
     }
     
@@ -117,20 +114,11 @@ class BluetoothService extends GetxService {
       
       // 开始扫描
       _scanSubscription?.cancel();
-      _scanSubscription = _flutterBlue.scan(
-        timeout: timeout,
-      ).listen(
-        (result) {
-          // 添加到扫描结果中
-          final index = scanResults.indexWhere(
-            (r) => r.device.id == result.device.id,
-          );
-          
-          if (index >= 0) {
-            scanResults[index] = result;
-          } else {
-            scanResults.add(result);
-          }
+      await FlutterBluePlus.startScan(timeout: timeout);
+      
+      _scanSubscription = FlutterBluePlus.scanResults.listen(
+        (results) {
+          scanResults.value = results;
         },
         onDone: () {
           _isScanning.value = false;
@@ -151,7 +139,7 @@ class BluetoothService extends GetxService {
   Future<void> stopScan() async {
     if (_isScanning.value) {
       try {
-        await _flutterBlue.stopScan();
+        await FlutterBluePlus.stopScan();
         _isScanning.value = false;
       } catch (e) {
         debugPrint('停止扫描失败: $e');
@@ -161,7 +149,7 @@ class BluetoothService extends GetxService {
   
   /// 连接设备
   Future<void> connectToDevice(BluetoothDevice device) async {
-    if (isConnected.value && connectedDevice.value?.id == device.id) {
+    if (isConnected.value && connectedDevice.value?.remoteId == device.remoteId) {
       return;
     }
     
@@ -175,11 +163,11 @@ class BluetoothService extends GetxService {
       
       // 监听连接状态
       _connectionSubscription?.cancel();
-      _connectionSubscription = device.state.listen((state) {
-        if (state == BluetoothDeviceState.disconnected) {
+      _connectionSubscription = device.connectionState.listen((state) {
+        if (state == BluetoothConnectionState.disconnected) {
           isConnected.value = false;
           connectedDevice.value = null;
-        } else if (state == BluetoothDeviceState.connected) {
+        } else if (state == BluetoothConnectionState.connected) {
           isConnected.value = true;
           connectedDevice.value = device;
         }
@@ -224,15 +212,15 @@ class BluetoothService extends GetxService {
       throw Exception('未连接设备');
     }
     
-    final deviceId = connectedDevice.value!.id.id;
-    final deviceName = connectedDevice.value!.name;
+    final deviceId = connectedDevice.value!.remoteId.str;
+    final deviceName = connectedDevice.value!.platformName;
     
     final info = PairingInfo(
       deviceId: deviceId,
       deviceName: deviceName,
       pairingCode: pairingCode.value,
-      timestamp: DateTime.now(),
-      status: PairingStatus.paired,
+      createdAt: DateTime.now(),
+      status: PairingStatus.PAIRED,
     );
     
     pairingInfo.value = info;
@@ -246,6 +234,16 @@ class BluetoothService extends GetxService {
   
   /// 获取设备名称
   String getDeviceName(BluetoothDevice device) {
-    return device.name.isNotEmpty ? device.name : '未知设备';
+    return device.platformName.isNotEmpty ? device.platformName : '未知设备';
+  }
+  
+  /// 检查指定设备ID是否已连接
+  Future<bool> isDeviceConnected(String deviceId) async {
+    if (!isConnected.value || connectedDevice.value == null) {
+      return false;
+    }
+    
+    // 检查当前连接的设备ID是否匹配
+    return connectedDevice.value!.remoteId.str == deviceId;
   }
 } 

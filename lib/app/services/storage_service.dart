@@ -9,9 +9,13 @@ import '../data/models/personal_info.dart';
 import '../data/models/history_record.dart';
 import '../data/models/pairing_info.dart';
 import '../data/models/hash_verification.dart';
+import 'package:flutter/foundation.dart';
 
 /// 存储服务，用于管理应用数据的本地存储
 class StorageService extends GetxService {
+  /// 获取StorageService实例
+  static StorageService get to => Get.find<StorageService>();
+
   static const String SECURE_STORAGE_KEY = 'record_app_encryption_key';
   static const String BOX_APP_SETTINGS = 'app_settings';
   static const String BOX_PERSONAL_INFO = 'personal_info';
@@ -95,6 +99,16 @@ class StorageService extends GetxService {
   
   //====== 应用设置管理 ======//
   
+  /// 获取通用布尔值设置
+  Future<bool?> getBool(String key) async {
+    return _settingsBox.get(key) as bool?;
+  }
+  
+  /// 设置通用布尔值设置
+  Future<void> setBool(String key, bool value) async {
+    await _settingsBox.put(key, value);
+  }
+  
   /// 获取是否首次启动
   Future<bool> getIsFirstLaunch() async {
     return _settingsBox.get('isFirstLaunch', defaultValue: true);
@@ -142,18 +156,25 @@ class StorageService extends GetxService {
     }
   }
   
+  /// 保存个人信息 (与setPersonalInfo功能相同，为保持兼容性添加)
+  Future<void> savePersonalInfo(PersonalInfo info) async {
+    await setPersonalInfo(info);
+  }
+  
   //====== 历史记录管理 ======//
   
   /// 获取所有历史记录
   Future<List<HistoryRecord>> getAllHistoryRecords() async {
-    return _historyRecordsBox.values.toList();
+    final records = _historyRecordsBox.values.toList();
+    // 转换类型以匹配返回类型
+    return records.map((record) => record as HistoryRecord).toList();
   }
   
   /// 根据ID获取历史记录
   Future<HistoryRecord?> getHistoryRecordById(String id) async {
     final records = _historyRecordsBox.values.where((record) => record.id == id);
     if (records.isEmpty) return null;
-    return records.first;
+    return records.first as HistoryRecord;
   }
   
   /// 保存历史记录
@@ -182,8 +203,9 @@ class StorageService extends GetxService {
   Future<List<HistoryRecord>> getHistoryRecords() async {
     // 按时间倒序排列，最新的记录在前面
     final records = _historyRecordsBox.values.toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return records;
+      ..sort((a, b) => (b as HistoryRecord).createdAt.compareTo((a as HistoryRecord).createdAt));
+    // 转换类型以匹配返回类型
+    return records.map((record) => record as HistoryRecord).toList();
   }
   
   /// 获取历史记录的分页数据
@@ -208,42 +230,49 @@ class StorageService extends GetxService {
     }
     
     final records = _historyRecordsBox.values.where((record) {
+      final typedRecord = record as HistoryRecord;
       final lowerQuery = query.toLowerCase();
-      return record.partnerName.toLowerCase().contains(lowerQuery) ||
-             (record.location?.toLowerCase().contains(lowerQuery) ?? false);
+      return typedRecord.partnerName.toLowerCase().contains(lowerQuery) ||
+             (typedRecord.location?.toLowerCase().contains(lowerQuery) ?? false);
     }).toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      ..sort((a, b) => (b as HistoryRecord).createdAt.compareTo((a as HistoryRecord).createdAt));
     
-    return records;
+    // 转换类型以匹配返回类型
+    return records.map((record) => record as HistoryRecord).toList();
   }
   
   //====== 配对信息管理 ======//
   
   /// 获取所有配对信息
   Future<List<PairingInfo>> getAllPairingInfo() async {
-    return _pairingInfoBox.values.toList();
+    final pairings = _pairingInfoBox.values.toList();
+    // 转换类型以匹配返回类型
+    return pairings.map((pairing) => pairing as PairingInfo).toList();
   }
   
   /// 根据ID获取配对信息
   Future<PairingInfo?> getPairingInfoById(String id) async {
-    final pairings = _pairingInfoBox.values.where((pairing) => pairing.id == id);
+    final pairings = _pairingInfoBox.values.where((pairing) => (pairing as PairingInfo).id == id);
     if (pairings.isEmpty) return null;
-    return pairings.first;
+    return pairings.first as PairingInfo;
   }
   
   /// 根据配对码获取配对信息
   Future<PairingInfo?> getPairingInfoByCode(String code) async {
     final pairings = _pairingInfoBox.values.where(
-      (pairing) => pairing.pairingCode == code && !pairing.isExpired(),
+      (pairing) {
+        final typedPairing = pairing as PairingInfo;
+        return typedPairing.pairingCode == code && !typedPairing.isExpired();
+      },
     );
     if (pairings.isEmpty) return null;
-    return pairings.first;
+    return pairings.first as PairingInfo;
   }
   
   /// 保存配对信息
   Future<void> savePairingInfo(PairingInfo pairing) async {
     final pairingToSave = pairing;
-    final existingPairings = _pairingInfoBox.values.where((p) => p.id == pairing.id);
+    final existingPairings = _pairingInfoBox.values.where((p) => (p as PairingInfo).id == pairing.id);
     
     if (existingPairings.isEmpty) {
       await _pairingInfoBox.add(pairingToSave);
@@ -255,7 +284,7 @@ class StorageService extends GetxService {
   
   /// 删除配对信息
   Future<void> deletePairingInfo(String id) async {
-    final pairings = _pairingInfoBox.values.where((pairing) => pairing.id == id);
+    final pairings = _pairingInfoBox.values.where((pairing) => (pairing as PairingInfo).id == id);
     if (pairings.isEmpty) return;
     
     final index = _pairingInfoBox.values.toList().indexOf(pairings.first);
@@ -266,23 +295,25 @@ class StorageService extends GetxService {
   
   /// 获取所有哈希验证
   Future<List<HashVerification>> getAllHashVerifications() async {
-    return _hashVerificationBox.values.toList();
+    final verifications = _hashVerificationBox.values.toList();
+    // 转换类型以匹配返回类型
+    return verifications.map((verification) => verification as HashVerification).toList();
   }
   
   /// 根据记录ID获取哈希验证
   Future<HashVerification?> getHashVerificationByRecordId(String recordId) async {
     final verifications = _hashVerificationBox.values.where(
-      (verification) => verification.recordId == recordId,
+      (verification) => (verification as HashVerification).recordId == recordId,
     );
     if (verifications.isEmpty) return null;
-    return verifications.first;
+    return verifications.first as HashVerification;
   }
   
   /// 保存哈希验证
   Future<void> saveHashVerification(HashVerification verification) async {
     final verificationToSave = verification;
     final existingVerifications = _hashVerificationBox.values.where(
-      (v) => v.id == verification.id,
+      (v) => (v as HashVerification).id == verification.id,
     );
     
     if (existingVerifications.isEmpty) {
@@ -347,5 +378,37 @@ class StorageService extends GetxService {
   /// 设置用户是否已同意协议
   Future<void> setAgreedToTerms(bool value) async {
     await _settingsBox.put('agreementAccepted', value);
+  }
+  
+  /// 清除应用缓存
+  Future<void> clearCache() async {
+    try {
+      // 获取临时目录
+      final tempDir = await getTemporaryDirectory();
+      
+      // 删除临时目录下的所有文件和子目录
+      if (await tempDir.exists()) {
+        final entities = await tempDir.list().toList();
+        for (var entity in entities) {
+          try {
+            if (entity is Directory) {
+              await entity.delete(recursive: true);
+            } else if (entity is File) {
+              await entity.delete();
+            }
+          } catch (e) {
+            debugPrint('删除缓存项失败: $e');
+            // 继续删除其他项
+          }
+        }
+      }
+      
+      // 可以根据需要清除其他缓存数据
+      // 注意不要删除重要数据，如用户记录等
+      
+    } catch (e) {
+      debugPrint('清除缓存失败: $e');
+      rethrow;
+    }
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:hive/hive.dart';
+// import 'package:hive/hive.dart'; // 移除未使用的导入
 
 import '../data/models/personal_info.dart';
 import 'storage_service.dart';
@@ -44,11 +44,11 @@ class UserService extends GetxService {
   Future<void> _loadUserData() async {
     try {
       // 加载协议签署状态
-      _agreementSigned.value = await _storageService.getBool('agreement_signed') ?? false;
-      _privacyPolicySigned.value = await _storageService.getBool('privacy_policy_signed') ?? false;
+      _agreementSigned.value = await _storageService.getAgreementAccepted();
+      _privacyPolicySigned.value = await _storageService.getAgreementAccepted(); // 暂用同一设置
       
       // 加载首次使用状态
-      _isFirstTime.value = await _storageService.getBool('is_first_time') ?? true;
+      _isFirstTime.value = await _storageService.getIsFirstLaunch();
       
       // 加载个人信息
       final savedInfo = await _storageService.getPersonalInfo();
@@ -64,25 +64,25 @@ class UserService extends GetxService {
   /// 签署用户协议
   Future<void> signAgreement() async {
     _agreementSigned.value = true;
-    await _storageService.setBool('agreement_signed', true);
+    await _storageService.setAgreementAccepted(true);
   }
   
   /// 签署隐私政策
   Future<void> signPrivacyPolicy() async {
     _privacyPolicySigned.value = true;
-    await _storageService.setBool('privacy_policy_signed', true);
+    await _storageService.setAgreementAccepted(true); // 暂用同一设置
   }
   
   /// 完成首次使用引导
   Future<void> completeFirstTimeGuide() async {
     _isFirstTime.value = false;
-    await _storageService.setBool('is_first_time', false);
+    await _storageService.setIsFirstLaunch(false);
   }
   
   /// 更新个人信息
   Future<void> updatePersonalInfo(PersonalInfo info) async {
     personalInfo.value = info;
-    await _storageService.savePersonalInfo(info);
+    await _storageService.setPersonalInfo(info);
     _calculateCompletionRate();
   }
   
@@ -106,17 +106,42 @@ class UserService extends GetxService {
     if (info.email.isNotEmpty) filledFields++;
     totalFields++;
     
-    if (info.address.isNotEmpty) filledFields++;
+    if (info.address != null && info.address!.isNotEmpty) filledFields++;
     totalFields++;
     
-    if (info.birthday != null) filledFields++;
+    if (info.avatarPath != null) filledFields++;
     totalFields++;
     
-    if (info.gender.isNotEmpty) filledFields++;
+    if (info.emergencyContact != null && info.emergencyContact!.isNotEmpty) filledFields++;
     totalFields++;
     
     // 计算完整率
     _completionRate.value = filledFields / totalFields;
+  }
+  
+  /// 从身份证号推断性别
+  /// 返回 "男" 或 "女"
+  String getGenderFromIdNumber(String idNumber) {
+    if (idNumber.length != 18) return "未知";
+    
+    // 身份证号第17位，奇数为男，偶数为女
+    int genderCode = int.tryParse(idNumber.substring(16, 17)) ?? 0;
+    return genderCode % 2 == 1 ? "男" : "女";
+  }
+  
+  /// 从身份证号推断生日
+  /// 返回格式为 YYYY-MM-DD 的生日字符串
+  String getBirthdayFromIdNumber(String idNumber) {
+    if (idNumber.length != 18) return "";
+    
+    try {
+      String year = idNumber.substring(6, 10);
+      String month = idNumber.substring(10, 12);
+      String day = idNumber.substring(12, 14);
+      return "$year-$month-$day";
+    } catch (e) {
+      return "";
+    }
   }
   
   /// 验证个人信息字段

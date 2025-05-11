@@ -5,7 +5,7 @@ import '../../../../../widgets/buttons/buttons.dart';
 import '../../../../../widgets/indicators/indicators.dart';
 import '../../../../theme/color_theme.dart';
 import '../controllers/face_recognition_controller.dart';
-import '../../../controllers/record_controller.dart';
+import '../../controllers/record_controller.dart';
 
 class FaceRecognitionView extends GetView<FaceRecognitionController> {
   const FaceRecognitionView({Key? key}) : super(key: key);
@@ -56,7 +56,7 @@ class FaceRecognitionView extends GetView<FaceRecognitionController> {
       child: StepIndicator(
         currentStep: recordController.currentStep.value,
         totalSteps: recordController.steps.length,
-        titles: recordController.steps.map((step) => step['title']!).toList(),
+        stepTitles: recordController.steps.map((step) => step['title']!).toList(),
       ),
     );
   }
@@ -67,7 +67,7 @@ class FaceRecognitionView extends GetView<FaceRecognitionController> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(
-            Icons.camera_alt_off,
+            Icons.camera_alt_outlined,
             size: 64,
             color: ColorTheme.warning,
           ),
@@ -102,10 +102,10 @@ class FaceRecognitionView extends GetView<FaceRecognitionController> {
   }
 
   Widget _buildLoadingView() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+        children: const [
           CircularProgressIndicator(
             color: ColorTheme.primaryColor,
           ),
@@ -196,7 +196,7 @@ class FaceRecognitionView extends GetView<FaceRecognitionController> {
                   controller.isFrontCameraSelected.value
                       ? '请将面部置于圈内，保持表情自然'
                       : '请切换到前置摄像头进行人脸识别',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     color: ColorTheme.textSecondary,
                   ),
@@ -275,6 +275,8 @@ class FaceRecognitionView extends GetView<FaceRecognitionController> {
   }
   
   Widget _buildCameraPreview() {
+    final recordController = Get.find<RecordController>();
+    
     return Stack(
       fit: StackFit.expand,
       alignment: Alignment.center,
@@ -309,17 +311,19 @@ class FaceRecognitionView extends GetView<FaceRecognitionController> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
-              children: [
-                Container(
+              children: const [
+                SizedBox(
                   width: 8,
                   height: 8,
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(4),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 6),
-                const Text(
+                SizedBox(width: 6),
+                Text(
                   'REC',
                   style: TextStyle(
                     color: Colors.white,
@@ -334,16 +338,18 @@ class FaceRecognitionView extends GetView<FaceRecognitionController> {
         
         // 人脸识别指导覆盖层
         Center(
-          child: Container(
+          child: SizedBox(
             width: 220,
             height: 220,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: ColorTheme.primaryColor,
-                width: 2,
-                style: BorderStyle.dashed,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: ColorTheme.primaryColor,
+                  width: 2,
+                  style: BorderStyle.solid,
+                ),
+                shape: BoxShape.circle,
               ),
-              borderRadius: BorderRadius.circular(110),
             ),
           ),
         ),
@@ -378,10 +384,10 @@ class FaceRecognitionView extends GetView<FaceRecognitionController> {
         if (controller.isCapturing.value)
           Container(
             color: Colors.black.withOpacity(0.5),
-            child: const Center(
+            child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
+                children: const [
                   CircularProgressIndicator(
                     color: Colors.white,
                   ),

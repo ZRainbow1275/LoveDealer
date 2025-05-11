@@ -28,6 +28,7 @@ class ProfileController extends GetxController {
   
   // 状态变量
   final RxString username = ''.obs;
+  final RxString email = ''.obs;
   final RxString avatar = ''.obs;
   final RxBool isDarkMode = false.obs;
   
@@ -59,9 +60,9 @@ class ProfileController extends GetxController {
       // 如果有个人信息，则设置编辑控制器
       if (info != null) {
         nameController.text = info.name;
-        idNumberController.text = info.idNumber ?? '';
-        phoneController.text = info.phone ?? '';
-        emailController.text = info.email ?? '';
+        idNumberController.text = info.idNumber;
+        phoneController.text = info.phoneNumber;
+        emailController.text = info.email;
         addressController.text = info.address ?? '';
       }
       
@@ -85,9 +86,9 @@ class ProfileController extends GetxController {
     int completedFields = 0;
     
     if (personalInfo.value!.name.isNotEmpty) completedFields++;
-    if (personalInfo.value!.idNumber != null && personalInfo.value!.idNumber!.isNotEmpty) completedFields++;
-    if (personalInfo.value!.phone != null && personalInfo.value!.phone!.isNotEmpty) completedFields++;
-    if (personalInfo.value!.email != null && personalInfo.value!.email!.isNotEmpty) completedFields++;
+    if (personalInfo.value!.idNumber.isNotEmpty) completedFields++;
+    if (personalInfo.value!.phoneNumber.isNotEmpty) completedFields++;
+    if (personalInfo.value!.email.isNotEmpty) completedFields++;
     if (personalInfo.value!.address != null && personalInfo.value!.address!.isNotEmpty) completedFields++;
     
     completionPercentage.value = completedFields / totalFields;
@@ -100,9 +101,9 @@ class ProfileController extends GetxController {
       final newInfo = PersonalInfo(
         id: personalInfo.value?.id,
         name: nameController.text,
-        idNumber: idNumberController.text.isEmpty ? null : idNumberController.text,
-        phone: phoneController.text.isEmpty ? null : phoneController.text,
-        email: emailController.text.isEmpty ? null : emailController.text,
+        idNumber: idNumberController.text,
+        phoneNumber: phoneController.text,
+        email: emailController.text,
         address: addressController.text.isEmpty ? null : addressController.text,
       );
       

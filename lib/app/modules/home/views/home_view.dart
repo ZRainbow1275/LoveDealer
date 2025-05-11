@@ -113,8 +113,8 @@ class HomeView extends GetView<HomeController> {
       ),
       child: Column(
         children: [
-          const Row(
-            children: [
+          Row(
+            children: const [
               Icon(
                 Icons.info_outline,
                 color: ColorTheme.primaryColor,

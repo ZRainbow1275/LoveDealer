@@ -5,7 +5,7 @@ import '../../../../../widgets/buttons/buttons.dart';
 import '../../../../../widgets/indicators/indicators.dart';
 import '../../../../theme/color_theme.dart';
 import '../controllers/completion_controller.dart';
-import '../../../controllers/record_controller.dart';
+import '../../controllers/record_controller.dart';
 
 class CompletionView extends GetView<CompletionController> {
   const CompletionView({Key? key}) : super(key: key);
@@ -58,7 +58,7 @@ class CompletionView extends GetView<CompletionController> {
       child: StepIndicator(
         currentStep: recordController.currentStep.value,
         totalSteps: recordController.steps.length,
-        titles: recordController.steps.map((step) => step['title']!).toList(),
+        stepTitles: recordController.steps.map((step) => step['title']!).toList(),
       ),
     );
   }
@@ -113,8 +113,8 @@ class CompletionView extends GetView<CompletionController> {
 
   Widget _buildCompletionMessage() {
     return Column(
-      children: [
-        const Text(
+      children: const [
+        Text(
           '记录完成',
           style: TextStyle(
             fontSize: 28,
@@ -122,8 +122,8 @@ class CompletionView extends GetView<CompletionController> {
             color: ColorTheme.verified,
           ),
         ),
-        const SizedBox(height: 8),
-        const Padding(
+        SizedBox(height: 8),
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 32.0),
           child: Text(
             '您已成功完成本次同意记录，记录已安全加密存储并生成哈希值用于验证',

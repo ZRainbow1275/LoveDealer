@@ -29,6 +29,12 @@ class PairingInfo {
   @HiveField(7)
   final String? recordId;
   
+  @HiveField(8)
+  final String? partnerDeviceId;
+  
+  @HiveField(9)
+  final String? partnerDeviceName;
+  
   PairingInfo({
     String? id,
     required this.deviceId,
@@ -38,6 +44,8 @@ class PairingInfo {
     this.expiresAt,
     this.status = PairingStatus.PENDING,
     this.recordId,
+    this.partnerDeviceId,
+    this.partnerDeviceName,
   }) : 
     id = id ?? const Uuid().v4(),
     createdAt = createdAt ?? DateTime.now();
@@ -50,6 +58,8 @@ class PairingInfo {
     DateTime? expiresAt,
     PairingStatus? status,
     String? recordId,
+    String? partnerDeviceId,
+    String? partnerDeviceName,
   }) {
     return PairingInfo(
       id: id,
@@ -60,6 +70,8 @@ class PairingInfo {
       expiresAt: expiresAt ?? this.expiresAt,
       status: status ?? this.status,
       recordId: recordId ?? this.recordId,
+      partnerDeviceId: partnerDeviceId ?? this.partnerDeviceId,
+      partnerDeviceName: partnerDeviceName ?? this.partnerDeviceName,
     );
   }
   
@@ -85,6 +97,8 @@ class PairingInfo {
     required String deviceId,
     required String deviceName,
     int expiresInMinutes = 10,
+    String? partnerDeviceId,
+    String? partnerDeviceName,
   }) {
     final code = generatePairingCode();
     final expiresAt = DateTime.now().add(Duration(minutes: expiresInMinutes));
@@ -95,6 +109,8 @@ class PairingInfo {
       pairingCode: code,
       expiresAt: expiresAt,
       status: PairingStatus.PENDING,
+      partnerDeviceId: partnerDeviceId,
+      partnerDeviceName: partnerDeviceName,
     );
   }
   
@@ -113,6 +129,8 @@ class PairingInfo {
         ? PairingStatusExtension.fromString(json['status']) 
         : PairingStatus.PENDING,
       recordId: json['recordId'],
+      partnerDeviceId: json['partnerDeviceId'],
+      partnerDeviceName: json['partnerDeviceName'],
     );
   }
   
@@ -127,11 +145,14 @@ class PairingInfo {
       'expiresAt': expiresAt?.toIso8601String(),
       'status': status.toString(),
       'recordId': recordId,
+      'partnerDeviceId': partnerDeviceId,
+      'partnerDeviceName': partnerDeviceName,
     };
   }
 }
 
 @HiveType(typeId: 4)
+// ignore: constant_identifier_names
 enum PairingStatus {
   @HiveField(0)
   PENDING,

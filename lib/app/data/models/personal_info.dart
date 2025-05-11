@@ -55,6 +55,16 @@ class PersonalInfo {
     createdAt = createdAt ?? DateTime.now(),
     updatedAt = updatedAt ?? DateTime.now();
   
+  // 创建空的个人信息对象
+  factory PersonalInfo.empty() {
+    return PersonalInfo(
+      name: '',
+      idNumber: '',
+      phoneNumber: '',
+      email: '',
+    );
+  }
+  
   // 拷贝方法，用于更新信息
   PersonalInfo copyWith({
     String? name,

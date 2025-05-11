@@ -1,12 +1,8 @@
 import 'dart:io';
-import 'dart:typed_data';
-import 'dart:ui';
-
 import 'package:camera/camera.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_ml_kit/google_ml_kit.dart';
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 
@@ -17,8 +13,8 @@ class FaceRecognitionService extends GetxService {
   static FaceRecognitionService get to => Get.find<FaceRecognitionService>();
   
   // 人脸检测器
-  final FaceDetector _faceDetector = GoogleMlKit.vision.faceDetector(
-    FaceDetectorOptions(
+  final FaceDetector _faceDetector = FaceDetector(
+    options: FaceDetectorOptions(
       enableContours: true,
       enableClassification: true,
       enableTracking: true,
@@ -73,7 +69,7 @@ class FaceRecognitionService extends GetxService {
     
     try {
       // 转换CameraImage为InputImage
-      final inputImage = await _processImageFromCamera(cameraImage, camera);
+      final inputImage = _processImageFromCamera(cameraImage, camera);
       if (inputImage == null) {
         return [];
       }
@@ -248,8 +244,8 @@ class FaceRecognitionService extends GetxService {
             final r = bytes[pixelIndex + 2];
             final a = bytes[pixelIndex + 3];
             
-            final color = img.getColor(r, g, b, a);
-            image.setPixel(x, y, color);
+            // 使用正确的颜色设置方法
+            image.setPixelRgba(x, y, r, g, b, a);
           }
         }
       }
@@ -262,50 +258,78 @@ class FaceRecognitionService extends GetxService {
   }
   
   /// 处理相机图像
-  Future<InputImage?> _processImageFromCamera(CameraImage cameraImage, CameraDescription camera) async {
+  InputImage? _processImageFromCamera(CameraImage cameraImage, CameraDescription camera) {
     try {
       // 获取图像旋转信息
       final rotation = _getImageRotation(camera.sensorOrientation);
       
       // 构建InputImage
-      return InputImage.fromBytes(
-        bytes: _concatenatePlanes(cameraImage.planes),
-        metadata: InputImageMetadata(
-          size: Size(cameraImage.width.toDouble(), cameraImage.height.toDouble()),
-          rotation: rotation,
-          format: InputImageFormat.nv21, // 假设为NV21格式，实际需根据相机输出调整
-          bytesPerRow: cameraImage.planes[0].bytesPerRow,
-        ),
-      );
+      if (Platform.isAndroid) {
+        // Android使用nv21格式
+        if (cameraImage.format.group != ImageFormatGroup.nv21) {
+          debugPrint('不支持的图像格式: ${cameraImage.format.group}，Android仅支持nv21格式');
+          return null;
+        }
+        
+        final plane = cameraImage.planes.first;
+        final imageRotation = InputImageRotationValue.fromRawValue(rotation) ?? 
+                             InputImageRotation.rotation0deg;
+        
+        return InputImage.fromBytes(
+          bytes: plane.bytes,
+          metadata: InputImageMetadata(
+            size: Size(cameraImage.width.toDouble(), cameraImage.height.toDouble()),
+            rotation: imageRotation,
+            format: InputImageFormat.nv21,
+            bytesPerRow: plane.bytesPerRow,
+          ),
+        );
+      } else if (Platform.isIOS) {
+        // iOS使用bgra8888格式
+        if (cameraImage.format.group != ImageFormatGroup.bgra8888) {
+          debugPrint('不支持的图像格式: ${cameraImage.format.group}，iOS仅支持bgra8888格式');
+          return null;
+        }
+        
+        final plane = cameraImage.planes.first;
+        final imageRotation = InputImageRotationValue.fromRawValue(rotation) ?? 
+                             InputImageRotation.rotation0deg;
+        
+        return InputImage.fromBytes(
+          bytes: plane.bytes,
+          metadata: InputImageMetadata(
+            size: Size(cameraImage.width.toDouble(), cameraImage.height.toDouble()),
+            rotation: imageRotation,
+            format: InputImageFormat.bgra8888,
+            bytesPerRow: plane.bytesPerRow,
+          ),
+        );
+      }
+      
+      return null;
     } catch (e) {
       debugPrint('处理相机图像失败: $e');
       return null;
     }
   }
   
-  /// 连接所有图像平面的字节数据
-  Uint8List _concatenatePlanes(List<CameraImagePlane> planes) {
-    final allBytes = WriteBuffer();
-    for (final plane in planes) {
-      allBytes.putUint8List(plane.bytes);
-    }
-    return allBytes.done().buffer.asUint8List();
-  }
-  
   /// 获取图像旋转信息
-  InputImageRotation _getImageRotation(int sensorOrientation) {
-    // 根据传感器方向确定旋转角度
-    switch (sensorOrientation) {
-      case 0:
-        return InputImageRotation.rotation0deg;
-      case 90:
-        return InputImageRotation.rotation90deg;
-      case 180:
-        return InputImageRotation.rotation180deg;
-      case 270:
-        return InputImageRotation.rotation270deg;
-      default:
-        return InputImageRotation.rotation0deg;
+  int _getImageRotation(int sensorOrientation) {
+    // 使用固定角度简化实现，避免设备方向处理的复杂性
+    if (Platform.isAndroid) {
+      // 在Android上，根据相机方向和传感器方向计算旋转角度
+      int rotationCompensation = 0;
+      if (sensorOrientation == 90) {
+        rotationCompensation = 90;
+      } else if (sensorOrientation == 180) {
+        rotationCompensation = 180;
+      } else if (sensorOrientation == 270) {
+        rotationCompensation = 270;
+      }
+      return rotationCompensation;
+    } else {
+      // 在iOS上，直接使用传感器方向
+      return sensorOrientation;
     }
   }
   

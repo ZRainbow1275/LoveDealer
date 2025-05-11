@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:hive/hive.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../data/models/history_record.dart';
@@ -11,6 +10,13 @@ import '../data/models/pairing_info.dart';
 import 'encryption_service.dart';
 import 'hash_service.dart';
 import 'storage_service.dart';
+
+// 验证状态枚举
+enum VerificationStatus {
+  unverified,
+  verified,
+  invalid
+}
 
 /// 记录管理服务
 /// 
@@ -46,7 +52,9 @@ class RecordService extends GetxService {
       _recordsFolderPath = '${directory.path}/records';
       
       // 确保目录存在
-      await Directory(_recordsFolderPath!).create(recursive: true);
+      if (_recordsFolderPath != null) {
+        await Directory(_recordsFolderPath!).create(recursive: true);
+      }
     } catch (e) {
       debugPrint('初始化记录文件夹失败: $e');
     }
@@ -56,9 +64,7 @@ class RecordService extends GetxService {
   Future<void> _loadHistoryRecords() async {
     try {
       final records = await _storageService.getHistoryRecords();
-      if (records != null) {
-        historyRecords.assignAll(records);
-      }
+      historyRecords.assignAll(records);
     } catch (e) {
       debugPrint('加载历史记录失败: $e');
     }
@@ -85,30 +91,37 @@ class RecordService extends GetxService {
     // 创建记录对象
     final record = HistoryRecord(
       id: recordId,
-      timestamp: DateTime.now(),
+      createdAt: DateTime.now(),
       partnerName: partnerName,
       partnerDeviceId: pairingInfo.deviceId,
-      statement: statement ?? '我与${partnerName}在充分知情、理性，且完全自愿的情况下同意发生性关系。',
+      consentStatement: statement ?? '我与$partnerName在充分知情、理性，且完全自愿的情况下同意发生性关系。',
       location: '未知位置', // 实际应用中应从LocationService获取
-      audioFilePath: audioPath,
-      photoFilePaths: photoPaths ?? [],
-      faceImagePaths: facePaths ?? [],
-      pairingInfo: pairingInfo,
-      verificationStatus: VerificationStatus.verified,
+      audioRecordPath: audioPath,
+      photosPaths: photoPaths,
+      isVerified: true,
     );
     
     // 复制文件到记录文件夹
-    record.audioFilePath = await _copyFileToRecord(audioPath, recordFolderPath, 'audio');
-    record.photoFilePaths = await _copyFilesToRecord(photoPaths, recordFolderPath, 'photos');
-    record.faceImagePaths = await _copyFilesToRecord(facePaths, recordFolderPath, 'faces');
+    final newAudioPath = await _copyFileToRecord(audioPath, recordFolderPath, 'audio');
+    final newPhotoPaths = await _copyFilesToRecord(photoPaths, recordFolderPath, 'photos');
+    final newFacePaths = await _copyFilesToRecord(facePaths, recordFolderPath, 'faces');
+    
+    // 使用copyWith创建具有新文件路径的更新记录
+    final updatedRecord = record.copyWith(
+      audioRecordPath: newAudioPath,
+      photosPaths: newPhotoPaths,
+      // 因为faceImagePaths是一个getter，我们需要更新底层的faceRecognitionPath
+      // 假设我们只取第一个人脸路径（如果有的话）
+      faceRecognitionPath: newFacePaths.isNotEmpty ? newFacePaths.first : null,
+    );
     
     // 计算记录哈希值
-    await _computeRecordHash(record);
+    await _computeRecordHash(updatedRecord);
     
     // 保存记录
-    await _saveRecord(record);
+    await _saveRecord(updatedRecord);
     
-    return record;
+    return updatedRecord;
   }
   
   /// 复制单个文件到记录文件夹
@@ -217,10 +230,10 @@ class RecordService extends GetxService {
       }
       
       // 排序历史记录（按时间降序）
-      historyRecords.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      historyRecords.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       
-      // 保存历史记录列表
-      await _storageService.saveHistoryRecords(historyRecords);
+      // 保存历史记录
+      await _storageService.saveHistoryRecord(record);
     } catch (e) {
       debugPrint('保存记录失败: $e');
     }
@@ -330,8 +343,8 @@ class RecordService extends GetxService {
     return historyRecords.where((record) {
       return record.partnerName.toLowerCase().contains(lowercaseKeyword) ||
              record.id.toLowerCase().contains(lowercaseKeyword) ||
-             record.timestamp.toString().contains(lowercaseKeyword) ||
-             record.location.toLowerCase().contains(lowercaseKeyword);
+             record.createdAt.toString().contains(lowercaseKeyword) ||
+             (record.location?.toLowerCase() ?? '').contains(lowercaseKeyword);
     }).toList();
   }
   
@@ -341,7 +354,7 @@ class RecordService extends GetxService {
       // 从列表中移除记录
       final index = historyRecords.indexWhere((r) => r.id == recordId);
       if (index >= 0) {
-        final record = historyRecords.removeAt(index);
+        historyRecords.removeAt(index);
         
         // 删除记录文件
         if (_recordsFolderPath != null) {
@@ -358,8 +371,10 @@ class RecordService extends GetxService {
           }
         }
         
-        // 保存历史记录列表
-        await _storageService.saveHistoryRecords(historyRecords);
+        // 更新存储
+        for (var record in historyRecords) {
+          await _storageService.saveHistoryRecord(record);
+        }
         return true;
       }
       

@@ -80,7 +80,7 @@ class HistoryController extends GetxController {
     }
     
     return records.where((record) =>
-      (record.partnerName?.toLowerCase() ?? '').contains(searchQuery.value.toLowerCase()) ||
+      record.partnerName.toLowerCase().contains(searchQuery.value.toLowerCase()) ||
       (record.location?.toLowerCase() ?? '').contains(searchQuery.value.toLowerCase())
     ).toList();
   }

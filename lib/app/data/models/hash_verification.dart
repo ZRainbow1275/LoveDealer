@@ -126,12 +126,12 @@ class HashVerification {
   }
   
   // 常用组件名称常量
-  static const String COMPONENT_PERSONAL_INFO = 'personal_info';
-  static const String COMPONENT_PARTNER_INFO = 'partner_info';
-  static const String COMPONENT_STATEMENT = 'statement';
-  static const String COMPONENT_AUDIO = 'audio';
-  static const String COMPONENT_FACE = 'face';
-  static const String COMPONENT_PHOTOS = 'photos';
-  static const String COMPONENT_LOCATION = 'location';
-  static const String COMPONENT_TIMESTAMP = 'timestamp';
+  static const String componentPersonalInfo = 'personal_info';
+  static const String componentPartnerInfo = 'partner_info';
+  static const String componentStatement = 'statement';
+  static const String componentAudio = 'audio';
+  static const String componentFace = 'face';
+  static const String componentPhotos = 'photos';
+  static const String componentLocation = 'location';
+  static const String componentTimestamp = 'timestamp';
 } 

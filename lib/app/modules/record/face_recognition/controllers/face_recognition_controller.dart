@@ -120,6 +120,8 @@ class FaceRecognitionController extends GetxController {
       
       await cameraController!.initialize();
       isCameraInitialized.value = true;
+      // 初始化后设置闪光灯模式（默认关闭）
+      await cameraController!.setFlashMode(FlashMode.off);
     } catch (e) {
       _logger.e('初始化相机失败', error: e);
       Get.snackbar('错误', '初始化相机失败: $e', snackPosition: SnackPosition.BOTTOM);
@@ -159,6 +161,8 @@ class FaceRecognitionController extends GetxController {
       );
       
       await cameraController!.initialize();
+      // 切换相机后设置闪光灯模式（默认关闭）
+      await cameraController!.setFlashMode(FlashMode.off);
     } catch (e) {
       _logger.e('切换相机失败', error: e);
       Get.snackbar('错误', '切换相机失败: $e', snackPosition: SnackPosition.BOTTOM);

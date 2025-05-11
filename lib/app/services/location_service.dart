@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -185,19 +186,42 @@ class LocationService extends GetxService {
     
     // 这里使用简化的距离计算公式
     // 实际应用中应使用Haversine公式或第三方库计算
-    const earthRadius = 6371000; // 地球半径（米）
-    final lat1 = location1.latitude! * (3.14159265359 / 180);
-    final lat2 = location2.latitude! * (3.14159265359 / 180);
-    final lon1 = location1.longitude! * (3.14159265359 / 180);
-    final lon2 = location2.longitude! * (3.14159265359 / 180);
+    const earthRadius = 6371000.0; // 地球半径（米）
+    final lat1 = location1.latitude! * (math.pi / 180);
+    final lat2 = location2.latitude! * (math.pi / 180);
+    final lon1 = location1.longitude! * (math.pi / 180);
+    final lon2 = location2.longitude! * (math.pi / 180);
     
     final dLat = lat2 - lat1;
     final dLon = lon2 - lon1;
     
-    final a = (dLat / 2).sin() * (dLat / 2).sin() +
-        (dLon / 2).sin() * (dLon / 2).sin() * lat1.cos() * lat2.cos();
-    final c = 2 * ((a).sqrt()).asin();
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.sin(dLon / 2) * math.sin(dLon / 2) * math.cos(lat1) * math.cos(lat2);
+    final c = 2 * math.asin(math.sqrt(a));
     
     return earthRadius * c; // 距离（米）
+  }
+  
+  /// 根据坐标获取地址信息
+  /// 
+  /// 由于实际地址解析需要使用geocoding服务，这里简化实现
+  /// 实际应用中应使用如geocoding或google_maps_webservice等插件
+  Future<String> getAddressFromCoordinates(double latitude, double longitude) async {
+    try {
+      // 简化实现，仅返回格式化坐标
+      // 实际应用中应调用地理编码API获取真实地址
+      return '经度: ${longitude.toStringAsFixed(6)}, 纬度: ${latitude.toStringAsFixed(6)}';
+      
+      // 完整实现示例（需要添加geocoding依赖）：
+      // final placemarks = await placemarkFromCoordinates(latitude, longitude);
+      // if (placemarks.isNotEmpty) {
+      //   final place = placemarks.first;
+      //   return '${place.street}, ${place.locality}, ${place.administrativeArea}, ${place.country}';
+      // }
+      // return '未知地址';
+    } catch (e) {
+      debugPrint('获取地址信息失败: $e');
+      return '获取地址失败';
+    }
   }
 } 

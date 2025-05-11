@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:get/get.dart';
 import 'package:crypto/crypto.dart';
@@ -31,8 +32,8 @@ class BluetoothUtils {
   /// 检查设备是否已连接
   static Future<bool> isDeviceConnected(BluetoothDevice device) async {
     try {
-      final state = await device.state.first;
-      return state == BluetoothDeviceState.connected;
+      final state = await device.connectionState.first;
+      return state == BluetoothConnectionState.connected;
     } catch (e) {
       print('Error checking device connection: $e');
       return false;
@@ -42,10 +43,10 @@ class BluetoothUtils {
   /// 搜索配对设备（过滤出只有本应用的设备）
   static Stream<List<ScanResult>> scanForPairingDevices({Duration timeout = const Duration(seconds: 10)}) {
     // 开始扫描，设置超时时间
-    FlutterBluePlus.instance.startScan(timeout: timeout);
+    FlutterBluePlus.startScan(timeout: timeout);
 
     // 过滤并返回扫描结果
-    return FlutterBluePlus.instance.scanResults
+    return FlutterBluePlus.scanResults
         .map((results) => results.where((result) => 
             _isAppDevice(result.device) && 
             result.advertisementData.connectable)
@@ -54,7 +55,7 @@ class BluetoothUtils {
 
   /// 停止蓝牙扫描
   static Future<void> stopScan() async {
-    return FlutterBluePlus.instance.stopScan();
+    return FlutterBluePlus.stopScan();
   }
 
   /// 检查设备是否为本应用设备
@@ -127,7 +128,7 @@ class BluetoothUtils {
 
   /// 检查蓝牙是否开启
   static Future<bool> isBluetoothEnabled() async {
-    return await FlutterBluePlus.instance.isOn;
+    return await FlutterBluePlus.adapterState.first == BluetoothAdapterState.on;
   }
 
   /// 获取设备的信号强度描述
@@ -153,9 +154,9 @@ class BluetoothUtils {
     
     final ratio = rssi * 1.0 / txPower;
     if (ratio < 1.0) {
-      return pow(ratio, 10.0) as double;
+      return pow(ratio, 10.0).toDouble();
     } else {
-      return 0.89976 * pow(ratio, 7.7095) + 0.111 as double;
+      return 0.89976 * pow(ratio, 7.7095).toDouble() + 0.111;
     }
   }
   
@@ -164,7 +165,7 @@ class BluetoothUtils {
     if (attempt <= 0) return initialDelay;
     
     // 使用双重退避：延迟时间 = 初始延迟 * 2^(尝试次数)，最大30秒
-    final factor = pow(2, attempt.clamp(0, 7)) as int;
+    final factor = pow(2, attempt.clamp(0, 7)).toInt();
     final calculatedDelay = initialDelay.inMilliseconds * factor;
     return Duration(milliseconds: calculatedDelay.clamp(0, 30000));
   }

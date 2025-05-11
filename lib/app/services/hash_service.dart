@@ -5,14 +5,28 @@ import 'package:get/get.dart';
 import '../data/models/history_record.dart';
 import '../data/models/hash_verification.dart';
 import '../data/models/personal_info.dart';
+import 'package:flutter/foundation.dart';
 
 /// 哈希服务，用于处理数据的哈希计算和验证
 class HashService extends GetxService {
+  /// 便捷获取HashService实例
+  static HashService get to => Get.find<HashService>();
+
   /// 计算字符串的SHA-256哈希值
   String calculateSHA256(String input) {
     final bytes = utf8.encode(input);
     final digest = sha256.convert(bytes);
     return digest.toString();
+  }
+  
+  /// 计算任何数据的通用哈希值
+  Future<String> calculateHash(String data) async {
+    return calculateSHA256(data);
+  }
+  
+  /// 兼容旧用法：计算字符串哈希
+  Future<String> computeStringHash(String data) async {
+    return calculateHash(data);
   }
   
   /// 计算文件的SHA-256哈希值
@@ -25,6 +39,11 @@ class HashService extends GetxService {
     final bytes = await file.readAsBytes();
     final digest = sha256.convert(bytes);
     return digest.toString();
+  }
+  
+  /// 兼容旧用法：计算文件哈希
+  Future<String> computeFileHash(String filePath) async {
+    return calculateFileSHA256(filePath);
   }
   
   /// 计算个人信息的哈希值
@@ -49,36 +68,36 @@ class HashService extends GetxService {
     final Map<String, String> componentHashes = {};
     
     // 个人信息哈希
-    componentHashes[HashVerification.COMPONENT_PERSONAL_INFO] = 
+    componentHashes[HashVerification.componentPersonalInfo] = 
       calculatePersonalInfoHash(personalInfo);
     
     // 伴侣信息哈希
-    componentHashes[HashVerification.COMPONENT_PARTNER_INFO] = 
+    componentHashes[HashVerification.componentPartnerInfo] = 
       calculateSHA256(record.partnerName + (record.partnerDeviceId ?? ''));
     
     // 同意陈述哈希
     if (record.consentStatement != null && record.consentStatement!.isNotEmpty) {
-      componentHashes[HashVerification.COMPONENT_STATEMENT] = 
+      componentHashes[HashVerification.componentStatement] = 
         calculateSHA256(record.consentStatement!);
     }
     
     // 录音哈希
     if (record.audioRecordPath != null && record.audioRecordPath!.isNotEmpty) {
       try {
-        componentHashes[HashVerification.COMPONENT_AUDIO] = 
+        componentHashes[HashVerification.componentAudio] = 
           await calculateFileSHA256(record.audioRecordPath!);
       } catch (e) {
-        print('Error calculating audio hash: $e');
+        debugPrint('Error calculating audio hash: $e');
       }
     }
     
     // 人脸识别哈希
     if (record.faceRecognitionPath != null && record.faceRecognitionPath!.isNotEmpty) {
       try {
-        componentHashes[HashVerification.COMPONENT_FACE] = 
+        componentHashes[HashVerification.componentFace] = 
           await calculateFileSHA256(record.faceRecognitionPath!);
       } catch (e) {
-        print('Error calculating face recognition hash: $e');
+        debugPrint('Error calculating face recognition hash: $e');
       }
     }
     
@@ -91,24 +110,24 @@ class HashService extends GetxService {
           final hash = await calculateFileSHA256(photoPath);
           photoHashes.add(hash);
         } catch (e) {
-          print('Error calculating photo hash: $e');
+          debugPrint('Error calculating photo hash: $e');
         }
       }
       
       if (photoHashes.isNotEmpty) {
-        componentHashes[HashVerification.COMPONENT_PHOTOS] = 
+        componentHashes[HashVerification.componentPhotos] = 
           calculateSHA256(photoHashes.join());
       }
     }
     
     // 位置哈希
     if (record.location != null && record.location!.isNotEmpty) {
-      componentHashes[HashVerification.COMPONENT_LOCATION] = 
+      componentHashes[HashVerification.componentLocation] = 
         calculateSHA256(record.location!);
     }
     
     // 时间戳哈希
-    componentHashes[HashVerification.COMPONENT_TIMESTAMP] = 
+    componentHashes[HashVerification.componentTimestamp] = 
       calculateSHA256(record.createdAt.toIso8601String());
     
     return componentHashes;
@@ -181,7 +200,7 @@ class HashService extends GetxService {
       final currentHash = await calculateFileSHA256(filePath);
       return storedHash == currentHash;
     } catch (e) {
-      print('Error verifying file hash: $e');
+      debugPrint('Error verifying file hash: $e');
       return false;
     }
   }

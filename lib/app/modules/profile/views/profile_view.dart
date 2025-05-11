@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../widgets/buttons/buttons.dart';
 import '../../../../widgets/forms/app_text_field.dart';
-import '../../../../widgets/dialogs/dialogs.dart';
 import '../../../theme/color_theme.dart';
 import '../controllers/profile_controller.dart';
 
@@ -35,9 +34,9 @@ class ProfileView extends GetView<ProfileController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildWarningBanner(),
-                      _buildProfileHeader(),
+                      _buildProfileHeader(context),
                       const SizedBox(height: 20),
-                      _buildInfoSection(),
+                      _buildInfoSection(context),
                       const SizedBox(height: 24),
                       _buildAppInfoSection(),
                       const SizedBox(height: 24),
@@ -70,7 +69,7 @@ class ProfileView extends GetView<ProfileController> {
         ),
         child: Row(
           children: [
-            Icon(
+            const Icon(
               Icons.warning_amber_rounded,
               color: ColorTheme.warning,
               size: 24,
@@ -79,7 +78,7 @@ class ProfileView extends GetView<ProfileController> {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: const [
                   Text(
                     '个人信息不完整',
                     style: TextStyle(
@@ -87,12 +86,12 @@ class ProfileView extends GetView<ProfileController> {
                       color: ColorTheme.warning,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
                     '请完善个人信息以使用全部功能',
                     style: TextStyle(
                       fontSize: 12,
-                      color: ColorTheme.warning.withOpacity(0.8),
+                      color: ColorTheme.warning,
                     ),
                   ),
                 ],
@@ -104,7 +103,7 @@ class ProfileView extends GetView<ProfileController> {
     });
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(BuildContext context) {
     return Obx(() {
       final info = controller.personalInfo.value;
       final name = info?.name ?? '请设置姓名';
@@ -144,8 +143,8 @@ class ProfileView extends GetView<ProfileController> {
                   child: InkWell(
                     onTap: () => _showEditAvatarModal(context),
                     borderRadius: BorderRadius.circular(20),
-                    child: Padding(
-                      padding: const EdgeInsets.all(6.0),
+                    child: const Padding(
+                      padding: EdgeInsets.all(6.0),
                       child: Icon(
                         Icons.camera_alt,
                         size: 16,
@@ -175,8 +174,8 @@ class ProfileView extends GetView<ProfileController> {
                     InkWell(
                       onTap: () => _showEditProfileModal(context),
                       borderRadius: BorderRadius.circular(20),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4.0),
+                      child: const Padding(
+                        padding: EdgeInsets.all(4.0),
                         child: Icon(
                           Icons.edit,
                           size: 16,
@@ -223,7 +222,7 @@ class ProfileView extends GetView<ProfileController> {
     });
   }
 
-  Widget _buildInfoSection() {
+  Widget _buildInfoSection(BuildContext context) {
     return Obx(() {
       final info = controller.personalInfo.value;
       
@@ -283,7 +282,7 @@ class ProfileView extends GetView<ProfileController> {
               child: Padding(
                 padding: const EdgeInsets.all(4.0),
                 child: Row(
-                  children: [
+                  children: const [
                     Text(
                       '编辑',
                       style: TextStyle(
@@ -291,7 +290,7 @@ class ProfileView extends GetView<ProfileController> {
                         color: ColorTheme.primaryColor,
                       ),
                     ),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 4),
                     Icon(
                       Icons.edit,
                       size: 16,
@@ -376,7 +375,7 @@ class ProfileView extends GetView<ProfileController> {
                       color: ColorTheme.primaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Center(
+                    child: const Center(
                       child: Icon(
                         Icons.info_outline,
                         color: ColorTheme.primaryColor,
@@ -387,16 +386,16 @@ class ProfileView extends GetView<ProfileController> {
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
+                      children: const [
+                        Text(
                           '记录 (LoveDealer)',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        const Text(
+                        SizedBox(height: 4),
+                        Text(
                           '版本 1.0.0',
                           style: TextStyle(
                             fontSize: 12,
@@ -406,7 +405,7 @@ class ProfileView extends GetView<ProfileController> {
                       ],
                     ),
                   ),
-                  Text(
+                  const Text(
                     '查看详细信息',
                     style: TextStyle(
                       fontSize: 12,
@@ -414,7 +413,7 @@ class ProfileView extends GetView<ProfileController> {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Icon(
+                  const Icon(
                     Icons.chevron_right,
                     size: 16,
                     color: ColorTheme.primaryColor,
